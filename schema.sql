@@ -20,14 +20,14 @@ USE `TPintegrador` ;
 CREATE TABLE IF NOT EXISTS `TPintegrador`.`usuario` (
   `idUsuario` INT NOT NULL,
   `username` VARCHAR(45) NULL,
-  `nivel` VARCHAR(45) NULL,
+  `nivel` Varchar(45) NULL,
   `reputacion` INT NULL,
   PRIMARY KEY (`idUsuario`))
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table ``.`categoria`
+-- Table `TPintegrador`.`categoria`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `TPintegrador`.`categoria` (
   `idCategoria` INT NOT NULL,
@@ -70,14 +70,14 @@ CREATE TABLE IF NOT EXISTS `TPintegrador`.`publicacion` (
   `vistas` INT NULL,
   `fechaPublicacion` DATE NULL,
   `idEstado` INT NOT NULL,
-  `nivelVistas` VARCHAR(45) NOT NULL
+  `nivelVistas` VARCHAR(45) NULL,
   PRIMARY KEY (`idPublicacion`),
   INDEX `fk_publicacion_categoria_idx` (`idCategoria` ASC) VISIBLE,
   INDEX `fk_publicacion_producto1_idx` (`idProducto` ASC) VISIBLE,
   INDEX `fk_publicacion_estado1_idx` (`idEstado` ASC) VISIBLE,
   INDEX `fk_publicacion_usuario_idx` (`idUsuarioV` ASC) VISIBLE,
   CONSTRAINT `fk_publicacion_categoria`
-    FOREIGN KEY (`idCategoria`)
+    FOREIGN KEY (`idCategoria` )
     REFERENCES `TPintegrador`.`categoria` (`idCategoria`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS `TPintegrador`.`compra` (
   `id_Publicacion` INT NOT NULL,
   `idComprador` INT NOT NULL,
   `satisfaccionC` INT NULL,
-  `idVendedor` INT NULL,
+  `satisfaccionV` INT NULL,
   INDEX `fk_usuario_has_publicacion_publicacion1_idx` (`id_Publicacion` ASC) VISIBLE,
   INDEX `fk_usuario_has_publicacion_usuario1_idx` (`idComprador` ASC) VISIBLE,
   PRIMARY KEY (`id_Publicacion`),
@@ -178,15 +178,21 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `TPintegrador`.`comentario` (
   `idComentario` INT NOT NULL,
+  `idPublicacion` INT NOT NULL,
   `pregunta` LONGTEXT NULL,
   `idUsuarioPregunta` INT NULL,
   `respuesta` LONGTEXT NULL,
-  `idPublicacion` INT NOT NULL,
   PRIMARY KEY (`idComentario`),
   INDEX `fk_comentario_publicacion1_idx` (`idPublicacion` ASC) VISIBLE,
+  INDEX `fk_comentario_usuario_idx` (`idUsuarioPregunta` ASC) VISIBLE,
   CONSTRAINT `fk_comentario_publicacion1`
     FOREIGN KEY (`idPublicacion`)
     REFERENCES `TPintegrador`.`publicacion` (`idPublicacion`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_comentario_usuario`
+    FOREIGN KEY (`idUsuarioPregunta`)
+    REFERENCES `TPintegrador`.`usuario` (`idUsuario`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -195,4 +201,5 @@ ENGINE = InnoDB;
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-
+ALTER TABLE `TPintegrador`.`comentario` 
+ADD COLUMN `fecha` VARCHAR(45) NULL AFTER `respuesta`;
