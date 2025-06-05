@@ -42,7 +42,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `TPintegrador`.`producto` (
   `idProducto` INT NOT NULL,
   `nombre` VARCHAR(45) NULL,
-  `descripcion` VARCHAR(45) NULL,
+  `descripcion` LONGTEXT NULL,
   PRIMARY KEY (`idProducto`))
 ENGINE = InnoDB;
 
