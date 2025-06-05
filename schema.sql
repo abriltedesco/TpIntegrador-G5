@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS `TPintegrador`.`publicacion` (
   `vistas` INT NULL,
   `fechaPublicacion` DATE NULL,
   `idEstado` INT NOT NULL,
+  `nivelVistas` VARCHAR(45) NOT NULL
   PRIMARY KEY (`idPublicacion`),
   INDEX `fk_publicacion_categoria_idx` (`idCategoria` ASC) VISIBLE,
   INDEX `fk_publicacion_producto1_idx` (`idProducto` ASC) VISIBLE,
