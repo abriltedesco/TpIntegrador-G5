@@ -20,7 +20,7 @@ USE `TPintegrador` ;
 CREATE TABLE IF NOT EXISTS `TPintegrador`.`usuario` (
   `idUsuario` INT NOT NULL,
   `username` VARCHAR(45) NULL,
-  `nivel` INT NULL,
+  `nivel` VARCHAR(45) NULL,
   `reputacion` INT NULL,
   PRIMARY KEY (`idUsuario`))
 ENGINE = InnoDB;
