@@ -1,3 +1,4 @@
+
 -- MySQL Workbench Forward Engineering
 
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
@@ -56,6 +57,14 @@ CREATE TABLE IF NOT EXISTS `TPintegrador`.`estado` (
   PRIMARY KEY (`idEstado`))
 ENGINE = InnoDB;
 
+-- -----------------------------------------------------
+-- Table `TPintegrador`.`subasta`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS  `TPintegrador`.`subasta`(
+	idSubasta INT NOT NULL,
+    monto float not null,
+    PRIMARY KEY (`idSubasta`))
+ENGINE = InnoDB;
 
 -- -----------------------------------------------------
 -- Table `TPintegrador`.`publicacion`
@@ -67,10 +76,10 @@ CREATE TABLE IF NOT EXISTS `TPintegrador`.`publicacion` (
   `idProducto` INT NOT NULL,
   `precio` FLOAT NULL,
   `estaActiva` TINYINT NULL,
-  `vistas` INT NULL,
   `fechaPublicacion` DATE NULL,
   `idEstado` INT NOT NULL,
   `nivelVistas` VARCHAR(45) NULL,
+  subastaId int null,
   PRIMARY KEY (`idPublicacion`),
   INDEX `fk_publicacion_categoria_idx` (`idCategoria` ASC) VISIBLE,
   INDEX `fk_publicacion_producto1_idx` (`idProducto` ASC) VISIBLE,
@@ -95,6 +104,11 @@ CREATE TABLE IF NOT EXISTS `TPintegrador`.`publicacion` (
     FOREIGN KEY (`idUsuarioV`)
     REFERENCES `TPintegrador`.`usuario` (`idUsuario`)
     ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+    CONSTRAINT `fk_publicacion_subasta`
+    FOREIGN KEY (`subastaId`)
+    REFERENCES `TPintegrador`.`subasta` (`idSubasta`)
+    ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
@@ -103,21 +117,27 @@ ENGINE = InnoDB;
 -- Table `TPintegrador`.`compra`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `TPintegrador`.`compra` (
-  `id_Publicacion` INT NOT NULL,
+  `idPublicacion` INT NOT NULL,
   `idComprador` INT NOT NULL,
+  `idVenta` INT NOT NULL,
   `satisfaccionC` INT NULL,
   `satisfaccionV` INT NULL,
-  INDEX `fk_usuario_has_publicacion_publicacion1_idx` (`id_Publicacion` ASC) VISIBLE,
+  INDEX `fk_usuario_has_publicacion_publicacion1_idx` (`idPublicacion` ASC) VISIBLE,
   INDEX `fk_usuario_has_publicacion_usuario1_idx` (`idComprador` ASC) VISIBLE,
-  PRIMARY KEY (`id_Publicacion`),
+  PRIMARY KEY (`idPublicacion`),
   CONSTRAINT `fk_usuario_has_publicacion_usuario1`
     FOREIGN KEY (`idComprador`)
     REFERENCES `TPintegrador`.`usuario` (`idUsuario`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_usuario_has_publicacion_publicacion1`
-    FOREIGN KEY (`id_Publicacion`)
+    FOREIGN KEY (`idPublicacion`)
     REFERENCES `TPintegrador`.`publicacion` (`idPublicacion`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+      CONSTRAINT `fk_usuario_has_publicacion_venta`
+    FOREIGN KEY (`idVenta`)
+    REFERENCES `TPintegrador`.`ventadirecta` (`idVentaDirecta`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -150,11 +170,9 @@ CREATE TABLE IF NOT EXISTS `TPintegrador`.`ventaDirecta` (
   `idVentaDirecta` INT NOT NULL,
   `idMetodoPago` INT NOT NULL,
   `idMetodoEnvio` INT NOT NULL,
-  `idPublicacion` INT NOT NULL,
   PRIMARY KEY (`idVentaDirecta`),
   INDEX `fk_ventaDirecta_metodoPago1_idx` (`idMetodoPago` ASC) VISIBLE,
   INDEX `fk_ventaDirecta_metodoEnvio1_idx` (`idMetodoEnvio` ASC) VISIBLE,
-  INDEX `fk_ventaDirecta_publicacion1_idx` (`idPublicacion` ASC) VISIBLE,
   CONSTRAINT `fk_ventaDirecta_metodoPago1`
     FOREIGN KEY (`idMetodoPago`)
     REFERENCES `TPintegrador`.`metodoPago` (`idMetodoPago`)
@@ -163,11 +181,6 @@ CREATE TABLE IF NOT EXISTS `TPintegrador`.`ventaDirecta` (
   CONSTRAINT `fk_ventaDirecta_metodoEnvio1`
     FOREIGN KEY (`idMetodoEnvio`)
     REFERENCES `TPintegrador`.`metodoEnvio` (`idMetodoEnvio`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_ventaDirecta_publicacion1`
-    FOREIGN KEY (`idPublicacion`)
-    REFERENCES `TPintegrador`.`publicacion` (`idPublicacion`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
