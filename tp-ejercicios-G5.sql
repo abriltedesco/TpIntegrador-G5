@@ -264,13 +264,6 @@ BEGIN
 END //
 delimiter ;
 
-call crearPublicacion(27, 4, "Cintas strap powerlifting", 300.50, "venta");
-insert into comentario values(44, 42, "dfffsf", 9, "ddsf", current_date());
-insert into ventaDirecta value(28, 4, 1);
-insert into compra value(42, 28, 10, 5, 4);
-
-UPDATE compra SET idComprador = 13 WHERE idPublicacion = 42;
-
 /* 3) Crear un trigger cambiarCategoria que después de insertar en la tabla de venta
 actualice la categoría de usuario. */
 
