@@ -200,7 +200,6 @@ SELECT * FROM publicacionesTendenciaHoy;
 /* 4) Crear una vista que muestre el nombre del vendedor con mayor reputación por
 categoría. Se debe mostrar nombre del vendedor y nombre de la categoría */
 
-
 #                                           ------------- EVENTOS -------------
 
 /* 1) Crear un evento que se ejecute una vez por semana y elimine todas las publicaciones
@@ -231,10 +230,46 @@ delimiter ;
 #                                           ------------- TRIGGERS ------------
 /* 1) Crear un trigger borrarPreguntas que antes de borrar una fila en la tabla de publicación
 borre todas las preguntas en la tabla de preguntas. */
+delimiter //
+CREATE TRIGGER borrarPreguntas BEFORE DELETE ON publicacion FOR EACH ROW
+BEGIN
+	DELETE FROM comentario WHERE idPublicacion = (old.idPublicacion);
+END //
+delimiter ;
+-- DELETE FROM publicacion WHERE idPublicacion = ;
 
 /* 2) Crear un trigger calificar que después de hacer un update en la tabla venta verifique
 que la calificación del vendedor y del comprador sea distinta de null. Si es así actualiza
 con esos datos la calificación del usuario en base a la calificación de esa venta. */
+delimiter //
+CREATE TRIGGER calificar_after_update AFTER UPDATE ON compra FOR EACH ROW
+BEGIN 
+	DECLARE calificacion_comprador INT ;
+	DECLARE calificacion_vendedor INT ;
+	DECLARE idVendedor INT ;
+	DECLARE promedioV FLOAT ;
+	DECLARE promedioC FLOAT ;
+    
+	SELECT satisfaccionC, satisfaccionV, idUsuarioV INTO calificacion_comprador, calificacion_vendedor, idVendedor
+    FROM compra c JOIN publicacion p on p.idPublicacion = c.idPublicacion
+    WHERE c.idPublicacion = (new.idPublicacion);
+    
+    set promedioV = promedioCalificaciones(idVendedor, "vendedor");
+    set promedioC = promedioCalificaciones(new.idComprador, "comprador");
+    
+	IF (calificacion_comprador IS NOT NULL AND calificacion_vendedor IS NOT NULL) THEN
+		UPDATE usuario SET reputacion = calif_a_rep(promedioV) WHERE idUsuario = idVendedor;
+		UPDATE usuario SET reputacion = calif_a_rep(promedioC) WHERE idUsuario = (new.idComprador);
+    END IF;
+END //
+delimiter ;
+
+call crearPublicacion(27, 4, "Cintas strap powerlifting", 300.50, "venta");
+insert into comentario values(44, 42, "dfffsf", 9, "ddsf", current_date());
+insert into ventaDirecta value(28, 4, 1);
+insert into compra value(42, 28, 10, 5, 4);
+
+UPDATE compra SET idComprador = 13 WHERE idPublicacion = 42;
 
 /* 3) Crear un trigger cambiarCategoria que después de insertar en la tabla de venta
 actualice la categoría de usuario. */
