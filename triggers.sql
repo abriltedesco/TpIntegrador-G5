@@ -15,7 +15,11 @@ insert into comentario values(44, 42, "dfffsf", 9, "ddsf", current_date());
 insert into comentario values(45, 42, "dfffsf", 10, "ddsf", current_date());
 
 DELETE FROM publicacion WHERE idPublicacion = 42;
-/* 3 */
+
+
+
+
+/* 3 costó pero it's workinggggg */
 
 SELECT count(*), idUsuarioV FROM compra c 
 JOIN publicacion p ON p.idPublicacion = c.idPublicacion 
