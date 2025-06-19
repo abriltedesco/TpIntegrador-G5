@@ -1,6 +1,8 @@
 # ARCHIVO CON TODOS LOS EJERCICIOS 
 
-/* nos olvidamos de poner auto increment, para no borrar todo y tener que volver a rehacer los inserts
+# ACLARACIONES :
+/* A. en los tests estan subidos los archivos con calls, consultas de prueba para ir resolviendo ejercicios */ 
+/* B. nos olvidamos de poner auto increment, para no borrar todo y tener que volver a rehacer los inserts
 hicimos funciones que hagan lo mismo */
 delimiter //
 create function crearSubasta() returns int deterministic
@@ -16,6 +18,15 @@ create function crearIdProd() returns int deterministic
 begin
 	declare idNuevo int;
 	SELECT max(idProducto) INTO idNuevo FROM producto;
+    return idNuevo + 1;
+end // 
+delimiter ;
+
+delimiter //
+create function crearIdVenta() returns int deterministic
+begin
+	declare idNuevo int;
+	SELECT max(idVentaDirecta) INTO idNuevo FROM ventaDirecta;
     return idNuevo + 1;
 end // 
 delimiter ;
@@ -44,8 +55,7 @@ begin
     WHERE idProducto = (SELECT idProducto FROM producto WHERE nombre = nombreProducto);
 end // 
 delimiter ;
-
-call buscarPublicacion("Smartphone Samsung S22");
+-- call buscarPublicacion("Smartphone Samsung S22");
 
 /* 2. Definir un procedimiento crearPublicacion que reciba los datos de la publicación e
 inserte una fila en la tabla publicación. Además tiene que recibir el tipo de publicación,
@@ -80,9 +90,8 @@ begin
 	INSERT INTO producto values (crearIdProd(), nombre, descripcion);
 end //
 delimiter ;
-
-call crearPublicacion(3, 9, "Acrilico Eterna Violeta", 500.50, "venta");
-call crearProducto("Acrilico Eterna Violeta", "pintura acrilica de la marca eterna, color violeta");
+-- call crearPublicacion(3, 9, "Acrilico Eterna Violeta", 500.50, "venta");
+-- call crearProducto("Acrilico Eterna Violeta", "pintura acrilica de la marca eterna, color violeta");
 
 /* 3. Crear un procedimiento llamado verPreguntas que muestre todas las preguntas de una
 publicación. */
@@ -92,8 +101,7 @@ begin
 	SELECT pregunta FROM comentario where idPublicacion = idP;
 end//
 delimiter ;
-
-call verPreguntas(1);
+-- call verPreguntas(1);
 
 /* 4. Crear un procedimiento actualizarReputacionUsuarios que para cada usuario calcule el
 promedio de las calificaciones recibidas en las ventas realizadas (tanto como vendedor
@@ -124,6 +132,9 @@ returns int deterministic
 begin
 	declare reputation int default 0.0;
 		set reputation = 100 / (5 - promedio);
+        if reputation > 100 then
+			set reputation = 100;
+		end if;
         -- 20 de rep si avg aprox 1, 40 si avg aprox 2, etc etc
 	return reputation;
 end // 
@@ -168,8 +179,7 @@ create view preguntasSinRespuesta as
 select  comentario.*, idProducto from comentario 
 join publicacion on publicacion.idPublicacion = comentario.idPublicacion
 where respuesta IS NULL;
-
-SELECT * FROM preguntasSinRespuesta;
+-- SELECT * FROM preguntasSinRespuesta;
 
 /* 2) Crear una vista que muestre un top 10 de categorías más presentes en publicaciones de
 esta semana. */
@@ -250,14 +260,17 @@ BEGIN
 	DECLARE promedioV FLOAT ;
 	DECLARE promedioC FLOAT ;
     
-	SELECT satisfaccionC, satisfaccionV, idUsuarioV INTO calificacion_comprador, calificacion_vendedor, idVendedor
+    set calificacion_comprador = new.satisfaccionC;
+    set calificacion_vendedor = new.satisfaccionV;
+    
+	SELECT idUsuarioV INTO idVendedor
     FROM compra c JOIN publicacion p on p.idPublicacion = c.idPublicacion
-    WHERE c.idPublicacion = (new.idPublicacion);
+    WHERE p.idPublicacion = (new.idPublicacion);
     
     set promedioV = promedioCalificaciones(idVendedor, "vendedor");
     set promedioC = promedioCalificaciones(new.idComprador, "comprador");
     
-	IF (calificacion_comprador IS NOT NULL AND calificacion_vendedor IS NOT NULL) THEN
+	IF calificacion_comprador IS NOT NULL AND calificacion_vendedor IS NOT NULL THEN
 		UPDATE usuario SET reputacion = calif_a_rep(promedioV) WHERE idUsuario = idVendedor;
 		UPDATE usuario SET reputacion = calif_a_rep(promedioC) WHERE idUsuario = (new.idComprador);
     END IF;
@@ -266,6 +279,52 @@ delimiter ;
 
 /* 3) Crear un trigger cambiarCategoria que después de insertar en la tabla de venta
 actualice la categoría de usuario. */
+delimiter //
+create function cantVentas(id_usuario int) returns int deterministic 
+begin
+	declare cant int default 0;
+    SELECT count(*) into cant FROM compra c
+    JOIN publicacion p ON p.idPublicacion = c.idPublicacion  
+    WHERE idUsuarioV = id_usuario;
+    return cant;
+end // 
+delimiter ;
+
+delimiter //
+create function facturacion(id_usuario int) returns float deterministic 
+begin
+	declare suma float default 0;
+    SELECT sum(precio) into suma FROM compra c
+	JOIN publicacion p ON p.idPublicacion = c.idPublicacion  
+    WHERE idUsuarioV = id_usuario;
+    return suma;
+end // 
+delimiter ;
+
+delimiter //
+create procedure actualizarNivel(in id_usuario int)
+begin
+	IF cantVentas(id_usuario) <= 5 AND cantVentas(id_usuario) > 0 THEN
+		UPDATE usuario SET nivel = "Normal" WHERE idUsuario = id_usuario;
+	ELSE IF (cantVentas(id_usuario) > 5 AND cantVentas(id_usuario) <= 10) AND facturacion(id_usuario) >= 100000 THEN
+		UPDATE usuario SET nivel = "Platinum" WHERE idUsuario = id_usuario;
+    ELSE IF cantVentas(id_usuario) > 11 AND facturacion(id_usuario) >= 1000000 THEN
+		UPDATE usuario SET nivel = "Gold" WHERE idUsuario = id_usuario;
+    END IF;
+    END IF;
+    END IF;
+end // 
+delimiter ;
+
+delimiter //
+CREATE TRIGGER cambiarCategoria AFTER INSERT ON compra FOR EACH ROW
+BEGIN
+	declare id_usuario_vendedor int ;
+    SELECT idUsuarioV INTO id_usuario_vendedor FROM publicacion
+    WHERE idPublicacion = (new.idPublicacion);
+	call actualizarNivel(id_usuario_vendedor);
+END //
+delimiter ;
 
 #                                          ------------- INDICES ------------
 /* 1) Crear un índice en la tabla de publicaciones para acelerar la búsqueda por nombre de
