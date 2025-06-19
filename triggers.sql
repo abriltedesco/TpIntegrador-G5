@@ -17,7 +17,40 @@ insert into comentario values(45, 42, "dfffsf", 10, "ddsf", current_date());
 DELETE FROM publicacion WHERE idPublicacion = 42;
 
 
+/* 222222 */
+delimiter //
+CREATE TRIGGER calificar_after_update AFTER UPDATE ON compra FOR EACH ROW
+BEGIN 
+	DECLARE calificacion_comprador INT ;
+	DECLARE calificacion_vendedor INT ;
+	DECLARE idVendedor INT ;
+	DECLARE promedioV FLOAT ;
+	DECLARE promedioC FLOAT ;
+    
+    set calificacion_comprador = new.satisfaccionC;
+    set calificacion_vendedor = new.satisfaccionV;
+    
+	SELECT idUsuarioV INTO idVendedor
+    FROM compra c JOIN publicacion p on p.idPublicacion = c.idPublicacion
+    WHERE p.idPublicacion = (new.idPublicacion);
+    
+    set promedioV = promedioCalificaciones(idVendedor, "vendedor");
+    set promedioC = promedioCalificaciones(new.idComprador, "comprador");
+    
+	IF calificacion_comprador IS NOT NULL AND calificacion_vendedor IS NOT NULL THEN
+		UPDATE usuario SET reputacion = calif_a_rep(promedioV) WHERE idUsuario = idVendedor;
+		UPDATE usuario SET reputacion = calif_a_rep(promedioC) WHERE idUsuario = (new.idComprador);
+    END IF;
+END //
+delimiter ;
 
+call crearProducto("Pantalon Jean Cargo", "cargo talle 36 negro con bolsillos");
+call crearPublicacion(34, 2, "Pantalon Jean Cargo", 23657.50, "venta");
+insert into comentario value(46, 45, "preguntapregunta", 14, "respuestarespuesta", current_date());
+insert into ventaDirecta value(30, 3, 2);
+insert into compra value(45, 30, 14, 2, 1);
+
+UPDATE compra SET idComprador = 13 WHERE idPublicacion = 45;
 
 /* 3 costó pero it's workinggggg */
 
