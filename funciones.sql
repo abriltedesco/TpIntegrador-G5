@@ -43,6 +43,41 @@ begin
     return mensaje;
 end//
 delimiter ;
+
+-- alternativa: 
+
+delimiter //
+create function comprarProducto(idUsuarioComprador int, idPublicacion int, idMetodoPago int, idMetodoEnvio int) returns text deterministic
+begin
+	declare mensaje text default " ";
+    declare actividad boolean default 0;
+    declare esVentaDirecta boolean default 1;
+    
+    set esVentaDirecta = (select subastaId from publicacion
+    where subastaId IS NULL and publicacion.idPublicacion = idPublicacion);
+    
+    set actividad = (select estaActiva from publicacion
+    where publicacion.idPublicacion = idPublicacion);
+    
+	if actividad = 1 AND esVentaDirecta = 1 then
+		update publicacion set estaActiva = 0
+		WHERE publicacion.idPublicacion = idPublicacion;
+    
+		update publicacion set estado = 11
+		WHERE publicacion.idPublicacion = idPublicacion;
+    
+		set mensaje = "Se ha actualizado el estado de la publicación";
+    else if actividad = 0 then
+		set mensaje = "La publicación no está activa.";
+	else if esVentaDirecta = 0 then
+		set mensaje = "Es una subasta";
+    end if;
+    end if;
+    end if;
+    
+    return mensaje;
+end//
+delimiter ;
 select comprarProducto(1, 20, 1, 1);
 select * from metodoPago;
 select * from metodoEnvio;
