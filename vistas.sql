@@ -103,6 +103,22 @@ join publicacion on usuario.idUsuario = publicacion.idUsuarioV
 join categoria on categoria.idCategoria = publicacion.idCategoria
 group by 1,2;
 
+
+/* para probar
+UPDATE usuario SET reputacion = 50 WHERE idUsuario = 37;
+UPDATE usuario SET reputacion = 70 WHERE idUsuario = 17;
+UPDATE usuario SET reputacion = 64 WHERE idUsuario = 27;
+UPDATE usuario SET reputacion = 95 WHERE idUsuario = 28;
+UPDATE usuario SET reputacion = 35 WHERE idUsuario = 18;
+UPDATE usuario SET reputacion = 57 WHERE idUsuario = 31;
+UPDATE usuario SET reputacion = 75  WHERE idUsuario = 9; 
+*/
+
+SELECT nombreUser, nombreCategoria FROM (SELECT MAX(rep), nombreCategoria FROM 
+(SELECT reputacion as rep, nombre as nombreCategoria, username as nombreUser FROM usuario
+JOIN publicacion p ON idUsuarioV = idUsuario
+JOIN categoria c on c.idCategoria = p.idCategoria
+GROUP BY idUsuarioV, p.idCategoria) as sss) as sss GROUP BY nombreCategoria;
 -- ------------------------------------------------------------------------------------------------------
 -- ------------------------------------------------------------------------------------------------------
 
