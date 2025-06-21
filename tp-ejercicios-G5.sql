@@ -393,12 +393,14 @@ delimiter ;
 #                                          ------------- INDICES ------------
 /* 1) Crear un índice en la tabla de publicaciones para acelerar la búsqueda por nombre de
 producto. */
-
+CREATE INDEX index_producto_nombre ON producto(nombre);
 /* 2) Crear un índice para asegurar que no se repitan direcciones de correo electrónico en la
 tabla de usuarios. */
-
+ALTER TABLE usuario ADD UNIQUE INDEX index_emails_usuarios (email);
+CREATE UNIQUE INDEX index_emails_usuarios ON usuario(email);
 /* 3) Crear un índice para optimizar las consultas frecuentes sobre publicaciones activas,
 pausadas o finalizadas. */
+CREATE INDEX index_publicacion_estado ON publicacion(idEstado);
 
 # ------------- TRANSACCIONES -------------
 /* 1. Plantear cómo sería el procedimiento crearPublicacion para que utilice una transacción
