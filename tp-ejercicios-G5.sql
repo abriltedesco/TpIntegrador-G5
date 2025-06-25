@@ -4,6 +4,10 @@
 /* A. en los tests estan subidos los archivos con calls, consultas de prueba para ir resolviendo ejercicios */ 
 /* B. nos olvidamos de poner auto increment, para no borrar todo y tener que volver a rehacer los inserts
 hicimos funciones que hagan lo mismo */
+/* C. algo que quizas es confuso es que pusimos las calificaciones/puntuaciones como "satisfaccion" 
+	porque asi lo decia el enunciado, el que es SATISFACCION V se esta refieriendo a la puntuacion que el
+	COMPRADOR le dio al VENDEDOR, o sea es la calificacion que recibe el vendedor por como realiza su tarea y por ende
+	SATISFACCIONC se refiere a la puntuacion que el VENDEDOR le dio al COMPRADOR */
 delimiter //
 create function crearSubasta() returns int deterministic
 begin
@@ -214,6 +218,189 @@ end//
 delimiter ;
 -- select comprarProducto(1, 5, 1, 1);
 
+
+/* 2. Crear la función cerrarPublicacion que debe cambiar el estado de la publicación a Finalizada. La función tiene que verificar que el usuario recibido por parámetro
+coincida con el usuario vendedor cargado en la publicación ya que solo el usuario vendedor puede cerrar la publicación. También tiene que verificar que no tenga
+calificaciones pendientes. */ 
+DELIMITER //
+CREATE FUNCTION cerrarPublicacion (p_idPublicacion INT, p_idUsuario INT)
+RETURNS VARCHAR(100)
+DETERMINISTIC
+BEGIN
+    DECLARE v_idVendedor INT;
+    DECLARE v_pendientes INT;
+    DECLARE resultado VARCHAR(100);
+ 
+    SELECT idUsuarioV INTO v_idVendedor
+    FROM publicacion
+    WHERE idPublicacion = p_idPublicacion;
+ 
+    IF v_idVendedor != p_idUsuario THEN
+        SET resultado = 'Error: Usuario no autorizado';
+        RETURN resultado;
+    END IF;
+ 
+	SELECT COUNT(*) INTO v_pendientes
+    FROM compra
+    WHERE idPublicacion = p_idPublicacion
+	AND (satisfaccionC IS NULL OR satisfaccionV IS NULL);
+ 
+    IF v_pendientes > 0 THEN
+        SET resultado = 'Error: Hay calificaciones pendientes';
+    ELSE
+        SET resultado = 'OK: Se puede cerrar la publicación';
+        UPDATE publicacion SET idEstado = 11 WHERE idPublicacion = p_idPublicacion;
+    END IF;
+ 
+    RETURN resultado;
+END//
+DELIMITER ;
+-- select cerrarPublicacion(9,12);
+
+/* 3. Crear la función eliminarProducto que debe eliminar un producto para lo cual verifica que el producto no esté asociado a ninguna publicación devolviendo el mensaje
+correspondiente en cada caso. */
+DELIMITER //
+CREATE FUNCTION eliminarProducto (productoId INT)
+RETURNS VARCHAR(100)
+DETERMINISTIC
+BEGIN
+    DECLARE cantidad INT;
+    DECLARE mensaje VARCHAR(100);
+ 
+    SELECT COUNT(*) INTO cantidad
+    FROM publicacion
+    WHERE idProducto = productoId;
+ 
+    IF cantidad > 0 THEN
+        SET mensaje = "No se puede eliminar ya que el producto está en una publicación";
+    ELSE
+        SET mensaje = "Se eliminó correctamente";
+        DELETE FROM producto WHERE idProducto = productoId;
+    END IF;
+ 
+    RETURN mensaje;
+END//
+DELIMITER ;
+-- select eliminarProducto(40);
+
+/* 4. Crear la función pausarPublicacion que debe verificar la existencia de la publicación recibida por parámetro y le cambia el estado a Pausad */
+DELIMITER //
+CREATE FUNCTION pausarPublicacion (idPub INT)
+RETURNS VARCHAR(100)
+DETERMINISTIC
+BEGIN
+  DECLARE existe INT;
+ 
+  SELECT COUNT(*) INTO existe
+  FROM publicacion
+  WHERE idPublicacion = idPub;
+ 
+  IF existe = 0 THEN
+    RETURN "La publicación no existe";
+  END IF;
+ 
+  UPDATE publicacion
+  SET idEstado = 12
+  WHERE idPublicacion = idPub;
+ 
+  RETURN 'Publicación pausada exitosamente.';
+END//
+DELIMITER ;
+-- select pausarPublicacion(97);
+
+
+/* 5. Crear la función pujarProducto que debe verificar que la publicación esté activa y que corresponda a una subasta. Si no suceden estas dos cosas devuelve el mensaje
+apropiado. Si se cumplen esas dos condiciones actualiza la tabla de subasta con los parámetros recibidos y devuelve el mensaje ‘pujado satisfactoriamente’ */
+DELIMITER //
+CREATE FUNCTION pujarProducto(id_publicacion INT)
+RETURNS VARCHAR (45)
+DETERMINISTIC
+BEGIN
+	DECLARE publicacion_activa boolean default 0;
+	DECLARE esSubasta int;
+    DECLARE mensaje varchar(45) default "publicacion inactiva" ;
+    
+	select estaActiva, subastaId into publicacion_activa, esSubasta from publicacion
+    WHERE idPublicacion = id_publicacion ;
+    
+    IF esSubasta IS NULL THEN
+		set mensaje = "no se trata de una subasta";
+	ELSE IF publicacion_activa AND esSubasta IS NOT NULL THEN
+		/* actualiza tabla subasta ???  PREGUNTAR !!!!*/ 
+		SET mensaje = "pujado satisfactoriamente";
+   END IF;
+   END IF;
+   
+   RETURN mensaje;
+END //
+DELIMITER ;
+-- SELECT pujarProducto(34);
+
+/* 6. Crear la función eliminarCategoria que debe verificar que no haya ninguna publicación para esa categoría y la elimina devolviendo el mensaje correspondiente en cada caso. */
+DELIMITER //
+CREATE FUNCTION eliminarCategoria(idCat INT)
+RETURNS VARCHAR(100)
+DETERMINISTIC
+BEGIN
+  DECLARE publicaciones INT;
+ 
+  SELECT COUNT(*) INTO publicaciones
+  FROM publicacion
+  WHERE idCategoria = idCat;
+ 
+  IF publicaciones > 0 THEN
+    RETURN "No se puede eliminar la categoría ya que tiene publicaciones.";
+  END IF;
+ 
+  DELETE FROM categoria WHERE idCategoria = idCat;
+ 
+  RETURN "Categoría eliminada";
+END//
+DELIMITER ;
+
+/* 7. Crear la función puntuarComprador que debe verificar que exista la venta y que el usuario recibido por parámetro sea el usuario vendedor. Si se cumplen las dos
+condiciones actualiza la calificación del comprador y devuelve un mensaje. Si no devuelve el mensaje de error. */
+DELIMITER //
+CREATE FUNCTION puntuarComprador(idPub INT, idVendedor INT, nuevaPunt INT)
+RETURNS VARCHAR(100)
+DETERMINISTIC
+BEGIN
+  DECLARE vendedorPub INT;
+  DECLARE compradorID INT;
+ 
+  SELECT idUsuarioV INTO vendedorPub
+  FROM publicacion
+  WHERE idPublicacion = idPub;
+ 
+  IF vendedorPub IS NULL THEN
+    RETURN "La publicación no existe";
+  END IF;
+ 
+  IF vendedorPub != idVendedor THEN
+    RETURN "El usuario no es el vendedor de la publicación";
+  END IF;
+ 
+  SELECT idComprador INTO compradorID
+  FROM compra
+  WHERE idPublicacion = idPub;
+ 
+  IF compradorID is null THEN
+    RETURN "No tiene ventas";
+  END IF;
+  
+  IF nuevaPunt > 5 THEN
+	RETURN "calificacion invalida";
+  END IF;
+ 
+ 
+ # ACLARACION (C) : SATISFACCION V ES LA PUNTUACION HACIA EL VENDEDOR Y SATISFACCION C AL COMPRADOR
+  UPDATE compra
+  SET satisfaccionC = nuevaPunt
+  WHERE idPublicacion = idPub;
+ 
+  RETURN "Se ha actualilizado la calificacion";
+END//
+DELIMITER ;
 
 /* 8. Crear la función responderPregunta que debe verificar que el id_vendedor recibido sea el id_vendedor asociado a la publicación sobre la cual se quiere responder, si es así se
 agrega la respuesta a la pregunta y devuelve el mensaje correspondiente */
