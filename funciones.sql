@@ -72,26 +72,31 @@ BEGIN
     FROM publicacion
     WHERE idPublicacion = p_idPublicacion;
  
-    IF v_idVendedor IS NULL THEN
+    IF v_idVendedor != p_idUsuario THEN
         SET resultado = 'Error: Usuario no autorizado';
         RETURN resultado;
     END IF;
  
-       SELECT COUNT(*) INTO v_pendientes
+	SELECT COUNT(*) INTO v_pendientes
     FROM compra
     WHERE idPublicacion = p_idPublicacion
-      AND (satisfaccionC IS NULL OR satisfaccionV IS NULL);
+	AND (satisfaccionC IS NULL OR satisfaccionV IS NULL);
  
     IF v_pendientes > 0 THEN
         SET resultado = 'Error: Hay calificaciones pendientes';
     ELSE
         SET resultado = 'OK: Se puede cerrar la publicación';
+        UPDATE publicacion SET idEstado = 11 WHERE idPublicacion = p_idPublicacion;
     END IF;
  
     RETURN resultado;
 END//
 DELIMITER ;
-
+select cerrarPublicacion(9,12);
+select e.nombre from publicacion p join estado e on p.idEstado = e.idEstado
+where idPublicacion = 9 ;
+select cerrarPublicacion(13,12);
+select idUsuarioV FROM publicacion WHERE idPublicacion = 12;
 
 #3
 DELIMITER //
