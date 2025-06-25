@@ -632,3 +632,51 @@ select * from publicacion;
 call crearPublicacionTransaccion (3, 9, null, 500.50, "qsy");
 
 /* 2. Realizar lo anterior pero con el procedimiento actualizarReputacionUsuarios. */
+
+delimiter //
+create procedure actualizarReputacionUsuariosTransaccion()
+begin
+    declare hayFilas int default 1;
+    declare vendedorObtenido int;
+    declare compradorObtenido int;
+    declare promedioCV float;
+    declare promedioCC float;
+    declare todo_ok boolean default true;
+
+    DECLARE userCursor CURSOR FOR
+        SELECT p.idUsuarioV, c.idComprador FROM publicacion p
+        JOIN compra c ON c.idPublicacion = p.idPublicacion;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET hayFilas = 0;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    begin
+        set todo_ok = false;
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'error en la transacción al actualizar';
+    end;
+
+    START TRANSACTION;
+    begin
+        OPEN userCursor;
+        cLoop: loop
+            FETCH userCursor intO vendedorObtenido, compradorObtenido;
+            IF hayFilas = 0 THEN
+                LEAVE cLoop;
+            END IF;
+
+            SET promedioCV = promedioCalificaciones(vendedorObtenido, "vendedor");
+            SET promedioCC = promedioCalificaciones(compradorObtenido, "comprador");
+            UPDATE usuario SET reputacion = calif_a_rep(promedioCV) WHERE idUsuario = vendedorObtenido;
+            UPDATE usuario SET reputacion = calif_a_rep(promedioCC) WHERE idUsuario = compradorObtenido;
+        end loop;
+        CLOSE userCursor;
+    end; 
+    
+    IF todo_ok THEN
+        COMMIT;
+        select 'actualización exitosa' as mensaje;
+    END IF;
+
+end //
+delimiter ;
+call actualizarReputacionUsuariosTransaccion();
