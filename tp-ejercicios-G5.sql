@@ -209,8 +209,6 @@ begin
 		set mensaje = "La publicación es una subasta ";
 	else if actividad = 0 then
 		set mensaje = "no esta activa.";
-	/*else 
-		set mensaje = "gdggf";*/
     end if;
     end if;
     end if;
@@ -611,7 +609,7 @@ begin
         SET idPost = crearIdPublicacion();
         IF tipo = 'venta' THEN
             INSERT INTO publicacion VALUE (idPost, idU, idC, idProd, precio, 1, CURRENT_DATE(), 10, 'Bronce', NULL);
-        ELSE IF tipo = "compra" then
+        ELSE IF tipo = "subasta" then
             SET idSubasta = crearSubasta();
             INSERT INTO publicacion VALUE (idPost, idU, idC, idProd, precio, 1, CURRENT_DATE(), 10, 'Bronce', idSubasta);
         END IF;
@@ -659,7 +657,7 @@ begin
     begin
         OPEN userCursor;
         cLoop: loop
-            FETCH userCursor intO vendedorObtenido, compradorObtenido;
+            FETCH userCursor INTO vendedorObtenido, compradorObtenido;
             IF hayFilas = 0 THEN
                 LEAVE cLoop;
             END IF;
