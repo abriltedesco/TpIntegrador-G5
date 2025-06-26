@@ -45,6 +45,27 @@ begin
 end // 
 delimiter ;
 
+delimiter //
+create function crearIdHistorial() returns int deterministic
+begin
+	declare idNuevo int;
+	SELECT max(idHistorial) INTO idNuevo FROM historial;
+    return idNuevo + 1;
+end // 
+delimiter ;
+
+delimiter //
+create function chequeoMontoSubasta(monto_a_ofertar float, subasta_id int) returns boolean deterministic
+begin
+	declare mayorOferta float;
+	select max(montoOfertado) into mayorOferta from historial where idSubasta = subasta_id;
+    if monto_a_ofertar > mayorOferta then
+		return true;
+	end if ;
+    return false;
+end //
+delimiter ;
+
 
 #                                            ------------- STORED PROCEDURES -------------
 
@@ -301,35 +322,40 @@ DELIMITER ;
 -- select pausarPublicacion(97);
 
 
-/* 5. Crear la función pujarProducto que debe verificar que la publicación esté activa y que corresponda a una subasta. Si no suceden estas dos cosas devuelve el mensaje
-apropiado. Si se cumplen esas dos condiciones actualiza la tabla de subasta con los parámetros recibidos y devuelve el mensaje ‘pujado satisfactoriamente’ */
+/* 5. Crear la función pujarProducto que debe verificar que la publicación esté activa y que corresponda a una subasta.
+ Si no suceden estas dos cosas devuelve el mensaje apropiado. Si se cumplen esas dos condiciones actualiza la tabla de 
+subasta con los parámetros recibidos y devuelve el mensaje ‘pujado satisfactoriamente’ */
 delimiter //
-create function pujarProducto(id_publicacion int, monto_a_ofertar float, idUsuario int) returns varchar (45) deterministic
+create function pujarProducto (id_publicacion int, monto_a_ofertar float, idUsuario int) returns varchar (45) deterministic
 begin
 	DECLARE publicacion_activa boolean default 0;
-	DECLARE esSubasta int;
+	DECLARE subasta_id int;
 	declare id_historial int;
     DECLARE mensaje varchar(45) default "publicacion inactiva" ;
     
-	select estaActiva, subastaId into publicacion_activa, esSubasta from publicacion
+	select estaActiva, subastaId into publicacion_activa, subasta_id from publicacion
     WHERE idPublicacion = id_publicacion ;
     
-    IF esSubasta IS NULL THEN
+    IF subasta_id IS NULL THEN
 		set mensaje = "no se trata de una subasta";
-	ELSE IF publicacion_activa AND esSubasta IS NOT NULL THEN
-		/* actualiza tabla subasta ???  PREGUNTAR A QUE OPCION SE REFIERE !!!!*/ 
-			   /* A) crear historial para subasta para ponerle un monto a ofertar a esa subasta tipo
+	ELSE IF publicacion_activa AND subasta_id IS NOT NULL THEN
+		if chequeoMontoSubasta(monto_a_ofertar, subasta_id) then
 			   set id_historial = crearIdHistorial();
-			   INSERT INTO historial VALUE(id_historial, monto_a_ofertar, idUsuario, current_date(), esSubasta); */
-			   /* B) agregar o eliminar producto*/
-		SET mensaje = "pujado satisfactoriamente";
+			   INSERT INTO historial VALUE(id_historial, monto_a_ofertar, idUsuario, current_date(), subasta_id);
+				SET mensaje = "pujado satisfactoriamente";
+		else
+			set mensaje = "monto ofertado es menor, no se puede ofertar";
+		end if;
    END IF;
    END IF;
    
    RETURN mensaje;
 end //
 delimiter ;
--- SELECT pujarProducto(34);
+
+drop function pujarProducto;
+
+SELECT pujarProducto(1, 500, 7);
 
 /* 6. Crear la función eliminarCategoria que debe verificar que no haya ninguna publicación para esa categoría y la elimina devolviendo el mensaje correspondiente en cada caso. */
 DELIMITER //
@@ -455,6 +481,14 @@ limit 10;
 
 /* 4) Crear una vista que muestre el nombre del vendedor con mayor reputación por
 categoría. Se debe mostrar nombre del vendedor y nombre de la categoría */
+create view mayorRepPorCategoria as
+select distinct(username),categoria.nombre from usuario
+join publicacion as p on usuario.idUsuario = p.idUsuarioV
+join categoria on categoria.idCategoria = p.idCategoria
+where reputacion =
+(select max(reputacion) from usuario
+join publicacion on usuario.idUsuario = publicacion.idUsuarioV
+where p.idCategoria = publicacion.idCategoria);
 
 #                                           ------------- EVENTOS -------------
 
